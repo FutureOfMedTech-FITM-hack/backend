@@ -9,6 +9,7 @@ To run the project use this set of commands:
 ```bash
 poetry install
 poetry shell
+python3 -m med_backend
 ```
 
 ## Docker

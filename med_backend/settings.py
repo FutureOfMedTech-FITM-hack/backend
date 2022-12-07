@@ -34,17 +34,19 @@ class Settings(BaseSettings):
     workers_count: int = 1
     # Enable uvicorn reloading
     reload: bool = False
-
+    JWT_ALGORITHM: str = "HS256"
+    # TODO: FIX FOR PROD
+    JWT_EAT: int = 60 * 24 * 10
     # Current environment
     environment: str = "dev"
 
     log_level: LogLevel = LogLevel.INFO
 
     # Variables for the database
-    db_host: str = "localhost"
+    db_host: str = "127.0.0.1"
     db_port: int = 5432
-    db_user: str = "med_backend"
-    db_pass: str = "med_backend"
+    db_user: str = "postgres"
+    db_pass: str = "postgres"
     db_base: str = "med_backend"
     db_echo: bool = False
 

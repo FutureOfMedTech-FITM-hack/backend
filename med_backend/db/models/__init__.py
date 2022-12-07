@@ -1,4 +1,5 @@
-"""med_backend models."""
+"""loads all models from models folder"""
+
 import pkgutil
 from pathlib import Path
 

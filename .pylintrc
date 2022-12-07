@@ -1,0 +1,5 @@
+argument-rgx=^[a-z][a-z0-9]*((_[a-z0-9]+)*)?$
+
+[MASTER]
+disable=
+    C0114,
