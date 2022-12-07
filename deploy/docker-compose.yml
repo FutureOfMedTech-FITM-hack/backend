@@ -1,0 +1,57 @@
+version: '3.9'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: ./deploy/Dockerfile
+    image: med_backend:${MED_BACKEND_VERSION:-latest}
+    restart: always
+    env_file:
+    - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      MED_BACKEND_HOST: 0.0.0.0
+      MED_BACKEND_DB_HOST: med_backend-db
+      MED_BACKEND_DB_PORT: 5432
+      MED_BACKEND_DB_USER: med_backend
+      MED_BACKEND_DB_PASS: med_backend
+      MED_BACKEND_DB_BASE: med_backend
+
+  db:
+    image: postgres:13.8-bullseye
+    hostname: med_backend-db
+    environment:
+      POSTGRES_PASSWORD: "med_backend"
+      POSTGRES_USER: "med_backend"
+      POSTGRES_DB: "med_backend"
+    volumes:
+    - med_backend-db-data:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: pg_isready -U med_backend
+      interval: 2s
+      timeout: 3s
+      retries: 40
+
+  redis:
+    image: bitnami/redis:6.2.5
+    hostname: "med_backend-redis"
+    restart: always
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
+    healthcheck:
+      test: redis-cli ping
+      interval: 1s
+      timeout: 3s
+      retries: 50
+
+
+
+volumes:
+  med_backend-db-data:
+    name: med_backend-db-data
