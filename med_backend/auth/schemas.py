@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, EmailStr
 
 
@@ -7,11 +9,11 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
-    username: str
+    email: EmailStr
 
 
 class UserBase(BaseModel):
-    username: str
+    email: EmailStr
 
 
 class UserLogin(UserBase):
@@ -20,13 +22,13 @@ class UserLogin(UserBase):
 
 class UserCreate(UserBase):
     password: str
-    email: EmailStr
     fullname: str
+    gender: str
+    born: datetime
 
 
 class UserPublicInfo(UserBase):
     id: int
-    email: EmailStr
     fullname: str | None
     disabled: bool
 
@@ -36,8 +38,7 @@ class UserPublicInfo(UserBase):
 
 class User(UserBase):
     id: int
-    email: EmailStr
-    fullname: str | None
+    fullname: str
     hashed_password: str
     disabled: bool
     is_manager: bool

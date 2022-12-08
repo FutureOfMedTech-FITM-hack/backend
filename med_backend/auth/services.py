@@ -32,8 +32,8 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
-async def get_user(session: AsyncSession, username: str) -> User:
-    db_user = await crud.get_user(session, username=username)
+async def get_user(session: AsyncSession, email: str) -> User:
+    db_user = await crud.get_user_by_email(session, email=email)
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return db_user
@@ -78,13 +78,13 @@ async def get_current_user(
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[JWT_ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
+        email: str = payload.get("sub")
+        if email is None:
             raise credentials_exception
-        token_data = TokenData(username=username)
+        token_data = TokenData(email=email)
     except JWTError:
         raise credentials_exception
-    user = await get_user(session, token_data.username)
+    user = await get_user(session, token_data.email)
     if user is None:
         raise credentials_exception
     return user
@@ -95,4 +95,17 @@ async def get_current_active_user(
 ) -> User:
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
+    return current_user
+
+
+async def get_current_active_manager(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    if current_user.disabled:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    if not current_user.is_manager:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="You are not allowed to access this info",
+        )
     return current_user

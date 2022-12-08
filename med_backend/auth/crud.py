@@ -9,14 +9,14 @@ from . import schemas, services
 from .schemas import User
 
 
-async def get_user(session: AsyncSession, username: str) -> User | None:
-    r = await session.execute(select(UserScheme).where(UserScheme.username == username))
+async def get_user_by_email(session: AsyncSession, email: str) -> User | None:
+    r = await session.execute(select(UserScheme).where(UserScheme.email == email))
     user = r.scalars().first()
     return user
 
 
-async def get_user_by_email(session: AsyncSession, email: str) -> User | None:
-    r = await session.execute(select(UserScheme).where(UserScheme.email == email))
+async def get_user(session: AsyncSession, pk: int) -> User | None:
+    r = await session.execute(select(UserScheme).where(UserScheme.id == pk))
     user = r.scalars().first()
     return user
 
@@ -37,17 +37,15 @@ async def get_users(
 
 
 async def create_user(session: AsyncSession, user: schemas.UserCreate) -> UserScheme:
-    if await get_user(session, user.username):
-        raise HTTPException(status_code=400, detail="Username already taken")
-
     if await get_user_by_email(session, user.email):
-        raise HTTPException(status_code=400, detail="Email already taken")
+        raise HTTPException(status_code=422, detail="Email already taken")
 
     hashed_password = services.get_password_hash(user.password)
     db_user = UserScheme(
         email=user.email,
-        username=user.username,
         fullname=user.fullname,
+        gender=user.gender,
+        born=user.born.date(),
         hashed_password=hashed_password,
         disabled=False,
     )
