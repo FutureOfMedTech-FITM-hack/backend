@@ -40,6 +40,7 @@ class User(UserBase):
     fullname: str | None
     hashed_password: str
     disabled: bool
+    is_manager: bool
 
     class Config:
         orm_mode = True

@@ -26,7 +26,12 @@ async def get_users(
     skip: int = 0,
     limit: int = 100,
 ) -> List[User] | None:
-    r = await session.execute(select(UserScheme).offset(skip).limit(limit))
+    r = await session.execute(
+        select(UserScheme)
+        .where(UserScheme.is_manager == False)
+        .offset(skip)
+        .limit(limit),
+    )
     users = r.scalars().all()
     return users
 

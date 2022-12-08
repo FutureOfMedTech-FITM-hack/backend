@@ -21,9 +21,9 @@ router = APIRouter()
 @router.post("/token", response_model=Token)
 async def login_for_access_token(
     data: UserLogin,
-    db: AsyncSession = Depends(get_db_session),
+    session: AsyncSession = Depends(get_db_session),
 ) -> Dict[str, str]:
-    user = await authenticate_user(db, data.username, data.password)
+    user = await authenticate_user(session, data.username, data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
