@@ -11,7 +11,13 @@ class UserScheme(Base):
 
     __tablename__ = "users"
 
-    id: int = Column(Integer, primary_key=True, index=True)
+    id: int = Column(
+        Integer,
+        primary_key=True,
+        autoincrement=True,
+        unique=True,
+        index=True,
+    )
     email: EmailStr = Column(String, unique=True, index=True, nullable=False)
     fullname: str = Column(String, default="")
     hashed_password: str = Column(String)

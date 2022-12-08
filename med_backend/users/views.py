@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from med_backend.auth import crud
 from med_backend.auth.schemas import User
-from med_backend.auth.services import get_current_active_manager
 from med_backend.db.dependencies import get_db_session
+from med_backend.users import crud
 from med_backend.users.schemas import FullUser, ListUser
+from med_backend.users.services import get_current_active_manager
 
 router = APIRouter()
 

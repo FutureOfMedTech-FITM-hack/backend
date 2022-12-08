@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
-from med_backend.auth.crud import create_user
 from med_backend.auth.schemas import Token, User, UserCreate, UserLogin, UserPublicInfo
 from med_backend.auth.services import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
@@ -14,6 +13,7 @@ from med_backend.auth.services import (
     get_current_active_user,
 )
 from med_backend.db.dependencies import get_db_session
+from med_backend.users.crud import create_user
 
 router = APIRouter()
 

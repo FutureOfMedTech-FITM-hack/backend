@@ -4,18 +4,17 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.models.users import UserScheme
-from . import schemas, services
-from .schemas import User
+from med_backend.auth import schemas, services
+from med_backend.db.models.users import UserScheme
 
 
-async def get_user_by_email(session: AsyncSession, email: str) -> User | None:
+async def get_user_by_email(session: AsyncSession, email: str) -> schemas.User | None:
     r = await session.execute(select(UserScheme).where(UserScheme.email == email))
     user = r.scalars().first()
     return user
 
 
-async def get_user(session: AsyncSession, pk: int) -> User | None:
+async def get_user(session: AsyncSession, pk: int) -> schemas.User | None:
     r = await session.execute(select(UserScheme).where(UserScheme.id == pk))
     user = r.scalars().first()
     return user
@@ -25,7 +24,7 @@ async def get_users(
     session: AsyncSession,
     skip: int = 0,
     limit: int = 100,
-) -> List[User] | None:
+) -> List[schemas.User] | None:
     r = await session.execute(
         select(UserScheme)
         .where(UserScheme.is_manager == False)

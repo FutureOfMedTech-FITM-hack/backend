@@ -9,10 +9,9 @@ from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from med_backend.auth.schemas import TokenData, User
+from med_backend.db.dependencies import get_db_session
 from med_backend.settings import settings
-
-from ..db.dependencies import get_db_session
-from . import crud
+from med_backend.users.crud import get_user_by_email
 
 SECRET_KEY = config("SECRET")
 JWT_ALGORITHM = settings.JWT_ALGORITHM
@@ -33,7 +32,7 @@ def get_password_hash(password: str) -> str:
 
 
 async def get_user(session: AsyncSession, email: str) -> User:
-    db_user = await crud.get_user_by_email(session, email=email)
+    db_user = await get_user_by_email(session, email=email)
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return db_user
@@ -95,17 +94,4 @@ async def get_current_active_user(
 ) -> User:
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
-    return current_user
-
-
-async def get_current_active_manager(
-    current_user: User = Depends(get_current_user),
-) -> User:
-    if current_user.disabled:
-        raise HTTPException(status_code=400, detail="Inactive user")
-    if not current_user.is_manager:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="You are not allowed to access this info",
-        )
     return current_user
