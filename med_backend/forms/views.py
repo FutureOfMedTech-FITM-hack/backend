@@ -67,14 +67,48 @@ async def get_form(
     return form
 
 
+@router.put("/{form_id}", response_model=Form)
+async def update_form(
+    form_id: int,
+    data: BaseForm,
+    current_user: User = Depends(get_current_active_manager),
+    session: AsyncSession = Depends(get_db_session),
+) -> Form:
+    form = await crud.get_form(session, form_id)
+    if form.user_id != current_user.id:
+        raise HTTPException(
+            status_code=401,
+            detail="You are not allowed to access this form",
+        )
+    await crud.update_form(session, data, form_id)
+    form = await services.get_full_form(session, form_id)
+    return form
+
+
+@router.delete("/{form_id}")
+async def delete_form(
+    form_id: int,
+    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_db_session),
+):
+    form = await crud.get_form(session, form_id)
+    if form.user_id != current_user.id:
+        raise HTTPException(
+            status_code=401,
+            detail="You are not allowed to access this form",
+        )
+    await crud.delete_form(session, form_id)
+    return {"detail": "deleted"}
+
+
 @router.get("/{form_id}/answers", response_model=List[FullSubmission])
-async def get_form(
+async def get_submissions(
     form_id: int,
     current_user: User = Depends(get_current_active_manager),
     session: AsyncSession = Depends(get_db_session),
 ):
     form = await crud.get_form(session, form_id)
-    if form.user.id != current_user.id:
+    if form.user_id != current_user.id:
         raise HTTPException(
             status_code=401,
             detail="You are not allowed to access this form",
@@ -90,7 +124,7 @@ async def create_form_field_view(
     session: AsyncSession = Depends(get_db_session),
 ):
     form = await crud.get_form(session, form_id)
-    if form.user.id != current_user.id:
+    if form.user_id != current_user.id:
         raise HTTPException(
             status_code=401,
             detail="You are not allowed to access this form",
@@ -118,7 +152,7 @@ async def create_assigment_view(
     session: AsyncSession = Depends(get_db_session),
 ):
     form = await services.get_form(session, form_id)
-    if form.user.id != current_user.id:
+    if form.user_id != current_user.id:
         raise HTTPException(
             status_code=401,
             detail="You are not allowed to access this form",
@@ -136,3 +170,47 @@ async def submit_form_view(
 ):
     await submit_form(session, data, form_id, current_user.id)
     return {"message": "created"}
+
+
+@router.get("/field/{field_id}", response_model=FormField)
+async def get_form_field(
+    field_id: int,
+    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_db_session),
+):
+    field = await crud.get_form_field(session, field_id)
+    return field
+
+
+@router.put("/field/{field_id}", response_model=FormField)
+async def update_form_field(
+    field_id: int,
+    data: CreateFormField,
+    current_user: User = Depends(get_current_active_manager),
+    session: AsyncSession = Depends(get_db_session),
+):
+    field = await crud.get_form_field(session, field_id)
+    if field.form.user_id != current_user.id:
+        raise HTTPException(
+            status_code=401,
+            detail="You are not allowed to access this form",
+        )
+    await crud.update_form_field(session, data, field_id)
+    field = await crud.get_form_field(session, field_id)
+    return field
+
+
+@router.delete("/field/{field_id}", response_model=FormField)
+async def delete_form_field(
+    field_id: int,
+    current_user: User = Depends(get_current_active_manager),
+    session: AsyncSession = Depends(get_db_session),
+):
+    field = await crud.get_form_field(session, field_id)
+    if field.form.user_id != current_user.id:
+        raise HTTPException(
+            status_code=401,
+            detail="You are not allowed to access this form",
+        )
+    await crud.delete_form_field(session, field_id)
+    return {"detail": "deleted"}

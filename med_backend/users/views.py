@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from med_backend.auth.schemas import User
+from med_backend.auth.schemas import UpdateUserProfile, User
 from med_backend.db.dependencies import get_db_session
 from med_backend.users import crud
 from med_backend.users.schemas import FullUser, ListUser
@@ -31,3 +31,30 @@ async def get_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+
+@router.put("/{key}", response_model=FullUser)
+async def update_user(
+    key: int,
+    data: UpdateUserProfile,
+    current_user: User = Depends(get_current_active_manager),
+    session: AsyncSession = Depends(get_db_session),
+) -> User:
+    user = await crud.get_user(session, key)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    await crud.update_user(session, key, data)
+    return user
+
+
+@router.delete("/{key}")
+async def delete_user(
+    key: int,
+    current_user: User = Depends(get_current_active_manager),
+    session: AsyncSession = Depends(get_db_session),
+):
+    user = await crud.get_user(session, key)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    await crud.delete_user(session, key)
+    return {"detail": "deleted"}

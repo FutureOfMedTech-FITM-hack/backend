@@ -45,3 +45,12 @@ class User(UserBase):
 
     class Config:
         orm_mode = True
+
+
+class UpdateUserBase(UserBase):
+    fullname: str
+
+
+class UpdateUserProfile(UpdateUserBase):
+    disabled: bool
+    is_manager: bool

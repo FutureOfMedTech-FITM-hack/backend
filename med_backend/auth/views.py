@@ -5,7 +5,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
-from med_backend.auth.schemas import Token, User, UserCreate, UserLogin, UserPublicInfo
+from med_backend.auth.schemas import (
+    Token,
+    UpdateUserProfile,
+    User,
+    UserCreate,
+    UserLogin,
+    UserPublicInfo,
+)
 from med_backend.auth.services import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     authenticate_user,
@@ -13,7 +20,7 @@ from med_backend.auth.services import (
     get_current_active_user,
 )
 from med_backend.db.dependencies import get_db_session
-from med_backend.users.crud import create_user
+from med_backend.users.crud import create_user, delete_user, update_user
 
 router = APIRouter()
 
@@ -48,7 +55,26 @@ async def create_user_view(
 
 
 @router.get("/me", response_model=UserPublicInfo)
-async def read_users_me(
+async def get_self(
     current_user: User = Depends(get_current_active_user),
 ) -> User:
     return current_user
+
+
+@router.put("/me")
+async def update_self(
+    data: UpdateUserProfile,
+    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_db_session),
+):
+    await update_user(session, current_user.id, data)
+    return {"detail": "updated"}
+
+
+@router.delete("/me")
+async def update_self(
+    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_db_session),
+):
+    await delete_user(session, current_user.id)
+    return {"detail": "updated"}

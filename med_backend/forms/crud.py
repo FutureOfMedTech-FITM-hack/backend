@@ -1,7 +1,7 @@
 from typing import List
 
 from fastapi import HTTPException
-from sqlalchemy import select, update
+from sqlalchemy import delete, literal_column, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -171,7 +171,7 @@ async def create_user_form_rev_question(
             ref_min=ref_min,
         )
         session.add(rev)
-        await session.commit()
+    await session.commit()
     await session.refresh(rev)
     return rev
 
@@ -255,3 +255,68 @@ async def get_submissions(session: AsyncSession, form_id: int) -> List[FullSubmi
             )
         res.append(FullSubmission(fio=submission.user.fullname, answers=answers))
     return res
+
+
+async def update_form(session: AsyncSession, data: BaseForm, form_id: int):
+    form = await get_form(session, form_id)
+    if not form:
+        raise HTTPException(status_code=422, detail="Form can't be used")
+
+    await session.execute(
+        update(FormScheme).where(FormScheme.id == form_id).values(**dict(data)),
+    )
+    await session.commit()
+    return
+
+
+async def delete_form(session: AsyncSession, form_id: int):
+    form = await get_form(session, form_id)
+    if not form:
+        raise HTTPException(status_code=422, detail="Form can't be used")
+
+    await session.execute(
+        delete(FormScheme).where(FormScheme.id == form_id),
+    )
+    await session.commit()
+    return
+
+
+async def get_form_field(session: AsyncSession, field_id: int) -> FormQuestion | None:
+    r = await session.execute(
+        select(FormQuestion)
+        .options(selectinload(FormQuestion.form))
+        .where(FormQuestion.id == field_id),
+    )
+    form = r.scalars().first()
+    return form
+
+
+async def update_form_field(
+    session: AsyncSession,
+    data: CreateFormField,
+    field_id: int,
+):
+    field = await get_form_field(session, field_id)
+    if not field:
+        raise HTTPException(status_code=422, detail="No such field")
+    r = await session.execute(
+        update(FormQuestion)
+        .where(FormQuestion.id == field_id)
+        .values(**dict(data))
+        .returning(literal_column("*")),
+    )
+    await session.commit()
+    field = r.scalars().first()
+    return field
+
+
+async def delete_form_field(session: AsyncSession, field_id: int):
+    field = await get_form_field(session, field_id)
+    if not field:
+        raise HTTPException(status_code=422, detail="Field can't be used")
+
+    await session.execute(
+        delete(FormQuestion).where(FormQuestion.id == field_id),
+    )
+    await session.commit()
+    return

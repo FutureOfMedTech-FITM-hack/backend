@@ -1,10 +1,11 @@
 from typing import List
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from med_backend.auth import schemas, services
+from med_backend.auth.schemas import UpdateUserProfile
 from med_backend.db.models.users import UserScheme
 
 
@@ -52,3 +53,20 @@ async def create_user(session: AsyncSession, user: schemas.UserCreate) -> UserSc
     await session.commit()
     await session.refresh(db_user)
     return db_user
+
+
+async def update_user(session: AsyncSession, user_id: int, data: UpdateUserProfile):
+    if await get_user_by_email(session, data.email):
+        raise HTTPException(status_code=422, detail="Email already taken")
+
+    await session.execute(
+        update(UserScheme).where(UserScheme.id == user_id).values(**dict(data)),
+    )
+    await session.commit()
+
+
+async def delete_user(session: AsyncSession, user_id: int):
+    await session.execute(
+        delete(UserScheme).where(UserScheme.id == user_id),
+    )
+    await session.commit()
