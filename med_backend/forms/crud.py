@@ -3,14 +3,22 @@ from typing import List
 from fastapi import HTTPException
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from med_backend.db.models.forms import (
     FormAssignment,
     FormQuestion,
     FormScheme,
+    UserFormFieldSubmission,
+    UserFormSubmission,
     UserRevQuestion,
 )
-from med_backend.forms.schemas import BaseForm, CreateFormField
+from med_backend.forms.schemas import (
+    BaseForm,
+    CreateFormField,
+    FullAnswer,
+    FullSubmission,
+)
 from med_backend.users.crud import get_user
 
 
@@ -166,3 +174,84 @@ async def create_user_form_rev_question(
         await session.commit()
     await session.refresh(rev)
     return rev
+
+
+async def create_submission(session: AsyncSession, form_id: int, user_id: int):
+    user = await get_user(session, user_id)
+    if not user:
+        raise HTTPException(status_code=422, detail="User can't be used")
+
+    form = await get_form(session, form_id)
+    if not form:
+        raise HTTPException(status_code=422, detail="Form can't be used")
+
+    obj = UserFormSubmission(form_id=form_id, user_id=user_id)
+    session.add(obj)
+    await session.commit()
+    await session.refresh(obj)
+    return obj
+
+
+async def create_submission_answer(
+    session: AsyncSession,
+    sumb_id: int,
+    field_id: int,
+    data: str,
+):
+
+    r = await session.execute(select(FormQuestion).where(FormQuestion.id == field_id))
+    field = r.scalars().first()
+    if not field:
+        raise HTTPException(status_code=422, detail="Such field doesn't exist")
+
+    obj = UserFormFieldSubmission(
+        submission_id=sumb_id,
+        question_id=field_id,
+        answer=data,
+    )
+    session.add(obj)
+    await session.commit()
+    await session.refresh(obj)
+    return obj
+
+
+async def get_submissions(session: AsyncSession, form_id: int) -> List[FullSubmission]:
+    r = await session.execute(
+        select(UserFormSubmission)
+        .options(selectinload(UserFormSubmission.answers))
+        .options(selectinload(UserFormSubmission.user))
+        .where(UserFormSubmission.form_id == form_id),
+    )
+    submissions = r.scalars().all()
+    res: List[FullSubmission] = []
+    for submission in submissions:
+        answers: List[FullAnswer] = []
+        for answer in submission.answers:
+            r = await session.execute(
+                select(UserRevQuestion)
+                .where(UserRevQuestion.user_id == submission.user.id)
+                .where(UserRevQuestion.question_id == answer.question_id),
+            )
+            obj = r.scalars().first()
+            ref_min = None
+            ref_max = None
+            if obj:
+                ref_min = obj.ref_min
+                ref_max = obj.ref_max
+
+            r = await session.execute(
+                select(FormQuestion).where(FormQuestion.id == answer.question_id),
+            )
+            obj = r.scalars().first()
+            answers.append(
+                FullAnswer(
+                    field_id=obj.id,
+                    question=obj.question,
+                    type=obj.type,
+                    answer=answer.answer,
+                    ref_min=ref_min if ref_min else obj.ref_min,
+                    ref_max=ref_max if ref_max else obj.ref_max,
+                ),
+            )
+        res.append(FullSubmission(fio=submission.user.fullname, answers=answers))
+    return res

@@ -2,8 +2,6 @@ from typing import List
 
 from pydantic import BaseModel
 
-from med_backend.auth.schemas import UserPublicInfo
-
 
 class Question(BaseModel):
     id: int
@@ -40,6 +38,25 @@ class FormAssigment(BaseModel):
     question_refs: List[QuestionRef]
 
 
+class FormAnswer(BaseModel):
+    field_id: int
+    answer: str
+
+
+class FullAnswer(BaseModel):
+    field_id: int
+    question: str
+    type: str
+    answer: str
+    ref_min: int | None
+    ref_max: int | None
+
+
+class FullSubmission(BaseModel):
+    fio: str
+    answers: List[FullAnswer]
+
+
 class BaseForm(BaseModel):
     name: str
 
@@ -57,7 +74,6 @@ class ListForm(BaseForm):
 
 class Form(BaseForm):
     id: int
-    user: UserPublicInfo
     questions: List[Question]
 
     class Config:

@@ -145,3 +145,12 @@ class UserFormFieldSubmission(Base):
         "UserFormSubmission",
         foreign_keys="UserFormFieldSubmission.submission_id",
     )
+
+    # question
+    question_id: int = Column(Integer, ForeignKey(FormQuestion.id), primary_key=True)
+    question: FormQuestion = relationship(
+        "FormQuestion",
+        foreign_keys="UserFormFieldSubmission.question_id",
+    )
+
+    answer: str = Column(String)

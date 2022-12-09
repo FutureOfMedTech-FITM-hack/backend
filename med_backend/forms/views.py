@@ -12,11 +12,13 @@ from med_backend.forms.schemas import (
     BaseForm,
     CreateFormField,
     Form,
+    FormAnswer,
     FormAssigment,
     FormField,
+    FullSubmission,
     ListForm,
 )
-from med_backend.forms.services import assign_form
+from med_backend.forms.services import assign_form, submit_form
 from med_backend.users.services import get_current_active_manager
 
 router = APIRouter()
@@ -34,7 +36,7 @@ async def get_all_forms(
 
 
 @router.get("/list", response_model=list[ListForm])
-async def get_all_forms(
+async def get_all_user_forms(
     skip: int = 0,
     limit: int = 100,
     current_user: User = Depends(get_current_active_user),
@@ -65,13 +67,29 @@ async def get_form(
     return form
 
 
+@router.get("/{form_id}/answers", response_model=List[FullSubmission])
+async def get_form(
+    form_id: int,
+    current_user: User = Depends(get_current_active_manager),
+    session: AsyncSession = Depends(get_db_session),
+):
+    form = await crud.get_form(session, form_id)
+    if form.user.id != current_user.id:
+        raise HTTPException(
+            status_code=401,
+            detail="You are not allowed to access this form",
+        )
+    submissions = await services.get_form_submissions(session, form_id)
+    return submissions
+
+
 @router.get("/{form_id}/fields", response_model=List[FormField])
 async def create_form_field_view(
     form_id: int,
     current_user: User = Depends(get_current_active_manager),
     session: AsyncSession = Depends(get_db_session),
 ):
-    form = await services.get_form(session, form_id)
+    form = await crud.get_form(session, form_id)
     if form.user.id != current_user.id:
         raise HTTPException(
             status_code=401,
@@ -106,4 +124,15 @@ async def create_assigment_view(
             detail="You are not allowed to access this form",
         )
     await assign_form(session, data, form_id)
+    return {"message": "created"}
+
+
+@router.post("/{form_id}/submit")
+async def submit_form_view(
+    form_id: int,
+    data: List[FormAnswer],
+    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_db_session),
+):
+    await submit_form(session, data, form_id, current_user.id)
     return {"message": "created"}
