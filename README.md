@@ -1,6 +1,8 @@
 # med_backend
 ## Poetry
 
+API docs - https://dev2.akarpov.ru/api/docs
+
 This project uses poetry. It's a modern dependency management
 tool.
 
