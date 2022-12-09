@@ -2,6 +2,7 @@ from importlib import metadata
 
 from fastapi import FastAPI
 from fastapi.responses import UJSONResponse
+from starlette.middleware.cors import CORSMiddleware
 
 from med_backend.web.api.router import api_router
 from med_backend.web.lifetime import register_shutdown_event, register_startup_event
@@ -32,4 +33,11 @@ def get_app() -> FastAPI:
     # Main router for the API.
     app.include_router(router=api_router, prefix="/api")
 
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     return app

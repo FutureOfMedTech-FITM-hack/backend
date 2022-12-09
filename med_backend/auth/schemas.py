@@ -1,6 +1,7 @@
-from datetime import datetime
+from datetime import date, datetime
 
-from pydantic import BaseModel, EmailStr
+from dateutil.relativedelta import relativedelta
+from pydantic import BaseModel, EmailStr, root_validator
 
 
 class Token(BaseModel):
@@ -31,6 +32,13 @@ class UserPublicInfo(UserBase):
     id: int
     fullname: str | None
     disabled: bool
+    born: date
+
+    @root_validator(pre=False)
+    def _set_fields(cls, values):
+        values["age"] = relativedelta(datetime.now(), values["born"]).years
+        values.pop("born")
+        return values
 
     class Config:
         orm_mode = True
